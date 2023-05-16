@@ -266,6 +266,29 @@ class Score:
         screen.blit(self.image, self.rect)
 
 
+class shield(pg.sprite.Sprite):  # 追加機能２
+    def __init__(self, bird , life):
+        super().__init__()
+        self.vx, self.vy = bird.get_direction()
+        angle = math.degrees(math.atan2(-self.vy, self.vx))
+        self.image = pg.Surface((20, bird.rect.height*2))
+        self.image = pg.transform.rotozoom(self.image, angle, 1.0)
+        pg.draw.rect(self.image, (0,0,0), (0, 0,20, bird.rect.height*2))  #黒い四角形
+        self.rect = self.image.get_rect()
+        self.rect.centerx = bird.rect.centerx + 50
+        self.rect.centery = bird.rect.centery
+        self.life = life
+
+
+    def update(self):
+        """
+        発動時間を減算し０になったら削除
+        """
+        self.life -= 1
+        if self.life == 0:
+            self.kill()  #shildsグループからの削除
+
+
 def main():
     pg.display.set_caption("真！こうかとん無双")
     screen = pg.display.set_mode((WIDTH, HEIGHT))
@@ -277,6 +300,7 @@ def main():
     beams = pg.sprite.Group()
     exps = pg.sprite.Group()
     emys = pg.sprite.Group()
+    shields = pg.sprite.Group()
 
     tmr = 0
     clock = pg.time.Clock()
@@ -287,10 +311,17 @@ def main():
                 return 0
             if event.type == pg.KEYDOWN and event.key == pg.K_SPACE:
                 beams.add(Beam(bird))
+ C0A22050/feature2
+            if event.type == pg.KEYDOWN and event.key == pg.K_CAPSLOCK:
+                if score.score > 50 and len(shields) == 0:    
+                    shields.add(shield(bird,400))
+                    score.score -= 50
+
             if event.type == pg.KEYDOWN and event.key == pg.K_RSHIFT: # hyperモードの発動条件
                 if score.score > 100:  #　スコアが100以上かつ右シフトを押したときスコアを100消費して発動
                     bird.change_state("hyper", 500)  #　効果時間は500フレーム
                     score.score_up(-100)
+ main
         screen.blit(bg_img, [0, 0])
 
         if tmr%200 == 0:  # 200フレームに1回，敵機を出現させる
@@ -310,6 +341,19 @@ def main():
             exps.add(Explosion(bomb, 50))  # 爆発エフェクト
             score.score_up(1)  # 1点アップ
 
+ C0A22050/feature2
+        if len(pg.sprite.spritecollide(bird, bombs, True)) != 0:
+            bird.change_img(8, screen) # こうかとん悲しみエフェクト
+            score.update(screen)
+            pg.display.update()
+            time.sleep(2)
+            return
+        
+        for bomb in pg.sprite.groupcollide(bombs, shields, True, False).keys():
+            exps.add(Explosion(bomb, 50))  # 爆発エフェクト
+            score.score_up(1)  # 1点アップ
+
+
         for bomb in pg.sprite.spritecollide(bird, bombs, True):
             if bird.state == "hyper":  # hyperモードのとき
                 exps.add(Explosion(bomb, 50))  # 爆発エフェクト
@@ -320,6 +364,7 @@ def main():
                 pg.display.update()
                 time.sleep(2)
                 return
+ main
 
         bird.update(key_lst, screen)
         beams.update()
@@ -330,7 +375,9 @@ def main():
         bombs.draw(screen)
         exps.update()
         exps.draw(screen)
-        score.update(screen)
+        shields.update()  #
+        shields.draw(screen)  #防御壁の更新
+        score.update(screen)  #防御壁の描画
         pg.display.update()
         tmr += 1
         clock.tick(50)
