@@ -249,7 +249,7 @@ class Score:
         screen.blit(self.image, self.rect)
 
 
-class shield(pg.sprite.Sprite):
+class shield(pg.sprite.Sprite):  # 追加機能２
     def __init__(self, bird , life):
         super().__init__()
         self.vx, self.vy = bird.get_direction()
